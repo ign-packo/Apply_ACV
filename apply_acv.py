@@ -17,11 +17,10 @@ def load_image(nom):
     """chargement d'une image avec son georef"""
     print("load_image : [", nom, "]")
     fic = gdal.Open(nom)
-    print(fic)
     return fic.ReadAsArray(), fic.GetGeoTransform()
 
 
-def save_image(nom, image, _geo_trans):
+def save_image(nom, image, geo_trans):
     """sauvegarde d'une image avec son georef"""
     cols = image.shape[2]
     rows = image.shape[1]
@@ -29,8 +28,8 @@ def save_image(nom, image, _geo_trans):
     print(bands, cols, rows)
     driver = gdal.GetDriverByName("GTiff")
     out_raster = driver.Create(nom, cols, rows, bands, gdal.GDT_Byte)
-    # if (geo_trans):
-    #     outRaster.SetGeoTransform(geo_trans)
+    if geo_trans and geo_trans != (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
+        out_raster.SetGeoTransform(geo_trans)
     band = out_raster.GetRasterBand(1)
     band.WriteArray(np.round(image[0]))
     band = out_raster.GetRasterBand(2)
