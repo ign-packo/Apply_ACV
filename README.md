@@ -19,7 +19,7 @@ Trois paramètres:
 
 Par exemple:
 ```
-python data/liste_reglages.txt data .
+python apply_acv.py data/liste_reglages.txt data .
 ```
 
 Il y a un script qui permet de comparer deux images (3 canaux 8 bits) et d'exporter une image des différences s'il y en a:
