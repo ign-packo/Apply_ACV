@@ -3,7 +3,7 @@
 Script d'application des courbes sur une image
 """
 import os
-import sys
+import argparse
 import struct
 from osgeo import gdal
 import numpy as np
@@ -11,6 +11,37 @@ from scipy.interpolate import interp1d, make_interp_spline
 
 # doc du format ACV
 # https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
+
+
+def read_args():
+    """Gestion des arguments"""
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i", "--input", required=True, help="input image folder"
+    )
+    parser.add_argument("-o", "--output", required=True, help="output folder")
+    parser.add_argument(
+        "-c",
+        "--curve",
+        required=True,
+        help="curves to apply to the image (init.tif,bde5_2452.0.acv,bde5_2452.0.0.psb)",
+    )
+    parser.add_argument(
+        "-a",
+        "--acv",
+        required=True,
+        help="path of folder containing acv files and masks (compatible format with GDAL)",
+    )
+    parser.add_argument(
+        "-v", "--verbose", help="verbose (default: 0)", type=int, default=0
+    )
+    args = parser.parse_args()
+
+    if args.verbose >= 1:
+        print("\nArguments: ", args)
+
+    return args
 
 
 def load_image(nom):
@@ -39,7 +70,7 @@ def save_image(nom, image, geo_trans):
 
 
 def load_acv(nom):
-    """"lecture des courbes dans un fichier ACV"""
+    """lecture des courbes dans un fichier ACV"""
     struct_io = struct.Struct(">h")
     acv = {}
     with open(nom, "rb") as fic:
@@ -73,7 +104,7 @@ def create_lut():
 
 
 def apply(lut, courbe):
-    """modification d'une lut pour l'application d'une courbe """
+    """modification d'une lut pour l'application d'une courbe"""
     fct = interp1d(courbe[::2], courbe[1::2])
     if len(courbe) > 4:
         order, value = (
@@ -125,33 +156,30 @@ def apply_all(image, courbes, masque):
     print("...fait")
 
 
-fichier = sys.argv[1]
-dir_in = sys.argv[2]
-dir_out = sys.argv[3]
+args = read_args()
 
-dir_acv = os.path.splitext(fichier)[0]
+dir_acv = os.path.splitext(args.acv)[0]
 
-for line in open(fichier):
-    T = line.split(",")
-    print(T)
-    nom_img = os.path.join(dir_in, T[0])
-    img, geoTrans = load_image(nom_img)
-    nbAcv = int((len(T) - 1) / 2)
-    print("nombre de courbes: ", nbAcv)
-    for i in range(nbAcv):
-        num_acv = nbAcv - 1 - i
-        nom_acv = os.path.join(dir_acv, T[1 + 2 * num_acv])
-        ACV = load_acv(nom_acv)
-        print("application de la courbe : ", nom_acv)
-        if len(T[2 + 2 * num_acv]) > 2:
-            nom_alpha = os.path.join(dir_acv, T[2 + 2 * num_acv]).replace(
-                ".psb", ".tif"
-            )
-            print("utilisation du masque : [", nom_alpha, "]")
-            alpha, geo = load_image(nom_alpha)
-            apply_all(img, ACV, alpha)
-        else:
-            print("sans masque")
-            apply_all(img, ACV, None)
-    nom_out = os.path.join(dir_out, T[0])
-    save_image(nom_out, img, geoTrans)
+T = args.curve.split(",")
+print(T)
+nom_img = os.path.join(args.input, T[0])
+img, geoTrans = load_image(nom_img)
+nbAcv = int((len(T) - 1) / 2)
+print("nombre de courbes: ", nbAcv)
+for i in range(nbAcv):
+    num_acv = nbAcv - 1 - i
+    nom_acv = os.path.join(dir_acv, T[1 + 2 * num_acv])
+    ACV = load_acv(nom_acv)
+    print("application de la courbe : ", nom_acv)
+    if len(T[2 + 2 * num_acv]) > 2:
+        nom_alpha = os.path.join(dir_acv, T[2 + 2 * num_acv]).replace(
+            ".psb", ".tif"
+        )
+        print("utilisation du masque : [", nom_alpha, "]")
+        alpha, geo = load_image(nom_alpha)
+        apply_all(img, ACV, alpha)
+    else:
+        print("sans masque")
+        apply_all(img, ACV, None)
+nom_out = os.path.join(args.output, T[0])
+save_image(nom_out, img, geoTrans)
