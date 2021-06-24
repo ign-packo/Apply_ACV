@@ -11,15 +11,16 @@ conda create --name apply_acv --file requirements.txt
 
 # Utilisation
 
-Trois paramètres:
+Quatre paramètres:
 
-- le nom du fichier texte au format SIA qui liste les courbes à appliquer par image
+- l'image et les courbes que l'on doit y appliquer
 - le dossier qui contient les images à corriger
 - le dossier de sortie des traitements (par défaut les images corrigées portent le même nom que les images en entrée)
+- le dossier contenant les courbes à appliquer (au format acv) et les masques correspondant (dans un format compatble avec GDAL)
 
 Par exemple:
 ```
-python data/liste_reglages.txt data .
+python -c "init.tif,Courbe_de_rehaussement.acv,,bde5_2452.0.acv,bde5_2452.0.0.psb" -i data -o . -a data\liste_reglages
 ```
 
 Il y a un script qui permet de comparer deux images (3 canaux 8 bits) et d'exporter une image des différences s'il y en a:
