@@ -64,3 +64,29 @@ Pour obtenir un résultat identifique à PhotoShop il faut faire attention aux a
 Corr = Round(Masque/255 * Round(Lut(Init)) + (255-Masque)/255 * Init)
 ````
 
+
+# Create_cmd
+Script de création des lignes de command pour Apply_ACV
+
+# Pré-requis
+Le script utilise un environnement python basique.
+
+# Utilisation
+
+Cinq paramètres:
+
+- le dossier contenant les images à corriger
+- le dossier de sortie des traitements
+- le fichier contenant la liste des images à traiter ainsi que les corrections à leur apporter
+- le dossier contenant les courbes à appliquer (au format acv) et les masques correspondant (dans un format compatible avec GDAL)
+- le nom du fichier de sortie contenant la liste des lignes de commande (optionnel, par défaut : .\cmd.txt)
+
+Par exemple :
+````
+python create_cmd.py -i data -o . -c data\liste_reglages.txt -a data\liste_reglages
+````
+
+Exemple en spécifiant le nom du fichier de sortie :
+````
+python create_cmd.py -i data -o . -c data\liste_reglages.txt -a data\liste_reglages -f .\out.txt
+````
