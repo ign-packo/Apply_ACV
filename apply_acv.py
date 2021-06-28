@@ -5,6 +5,7 @@ Script d'application des courbes sur une image
 import os
 import argparse
 import struct
+import math
 from osgeo import gdal
 import numpy as np
 from scipy.interpolate import interp1d, make_interp_spline
@@ -17,9 +18,7 @@ def read_args():
     """Gestion des arguments"""
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i", "--input", required=True, help="input image folder"
-    )
+    parser.add_argument("-i", "--input", required=True, help="input image folder")
     parser.add_argument("-o", "--output", required=True, help="output folder")
     parser.add_argument(
         "-c",
@@ -34,39 +33,29 @@ def read_args():
         help="path of folder containing acv files and masks (compatible format with GDAL)",
     )
     parser.add_argument(
-        "-v", "--verbose", help="verbose (default: 0)", type=int, default=0
+        "-b",
+        "--blocksize",
+        required=False,
+        default=1000,
+        type=int,
+        help="number of lines per block",
+    ),
+    parser.add_argument(
+        "-q",
+        "--quality",
+        required=False,
+        default=100,
+        type=int,
+        help="Jpeg compression quality (100: No compression)",
     )
+
+    parser.add_argument("-v", "--verbose", help="verbose (default: 0)", type=int, default=0)
     args = parser.parse_args()
 
     if args.verbose >= 1:
         print("\nArguments: ", args)
 
     return args
-
-
-def load_image(nom):
-    """chargement d'une image avec son georef"""
-    print("load_image : [", nom, "]")
-    fic = gdal.Open(nom)
-    return fic.ReadAsArray(), fic.GetGeoTransform()
-
-
-def save_image(nom, image, geo_trans):
-    """sauvegarde d'une image avec son georef"""
-    cols = image.shape[2]
-    rows = image.shape[1]
-    bands = image.shape[0]
-    print(bands, cols, rows)
-    driver = gdal.GetDriverByName("GTiff")
-    out_raster = driver.Create(nom, cols, rows, bands, gdal.GDT_Byte)
-    if geo_trans and geo_trans != (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
-        out_raster.SetGeoTransform(geo_trans)
-    band = out_raster.GetRasterBand(1)
-    band.WriteArray(np.round(image[0]))
-    band = out_raster.GetRasterBand(2)
-    band.WriteArray(np.round(image[1]))
-    band = out_raster.GetRasterBand(3)
-    band.WriteArray(np.round(image[2]))
 
 
 def load_acv(nom):
@@ -111,75 +100,115 @@ def apply(lut, courbe):
             [(2, 0)],
             [(2, 0)],
         )  # natural spline boundary conditions
-        fct = make_interp_spline(
-            courbe[::2], courbe[1::2], k=3, bc_type=(order, value)
-        )
+        fct = make_interp_spline(courbe[::2], courbe[1::2], k=3, bc_type=(order, value))
     for level in range(256):
         lut[level] = np.round(fct(lut[level]))
 
 
-def apply_all(image, courbes, masque):
+def apply_all(image, courbes, output, block_size):
     """application des courbes courbes avec le masque masque sur l'image."""
-    print("preparation des luts...")
-    print(courbes)
-    lut_r, lut_v, lut_b = create_lut()
-    apply(lut_r, courbes["courbes"][1])
-    apply(lut_v, courbes["courbes"][2])
-    apply(lut_b, courbes["courbes"][3])
-    # l'ordre a été repris sur l'implémentation faite dans le socle
-    # http://gitlab.forge-idi.ign.fr/socle/sd-socle/blob/dev/src/ign/image/radiometry/AcvCurveTransform.cpp
-    # on applique d'abord la courbe du canal, puis la courbe RVB
-    apply(lut_r, courbes["courbes"][0])
-    apply(lut_v, courbes["courbes"][0])
-    apply(lut_b, courbes["courbes"][0])
-    print("...fait")
-    print("application des luts...")
-    if masque is not None:
-        a_1 = masque / 255.0
-        a_2 = (-masque + 255) / 255.0
-        image[0] = np.round(
-            np.multiply(a_1, np.take(lut_r, image[0]))
-            + np.multiply(a_2, image[0])
+    print("application des luts par blocs...")
+
+    # on charge une portion de l'image
+    nb_block = int(math.ceil(image.RasterYSize / block_size))
+    for block in range(nb_block):
+        print("bloc : ", block)
+        image_b = image.ReadAsArray(
+            0,
+            block * block_size,
+            image.RasterXSize,
+            min(image.RasterYSize - block * block_size, block_size),
         )
-        image[1] = np.round(
-            np.multiply(a_1, np.take(lut_v, image[1]))
-            + np.multiply(a_2, image[1])
-        )
-        image[2] = np.round(
-            np.multiply(a_1, np.take(lut_b, image[2]))
-            + np.multiply(a_2, image[2])
-        )
-    else:
-        image[0] = np.take(lut_r, image[0])
-        image[1] = np.take(lut_v, image[1])
-        image[2] = np.take(lut_b, image[2])
-    print("...fait")
+        # on applique toutes les courbes sur cette portion d'image
+        for courbe in courbes:
+            lut_r = courbe["lut_r"]
+            lut_v = courbe["lut_v"]
+            lut_b = courbe["lut_b"]
+            masque = courbe["masque"]
+            if masque is not None:
+                masque_b = masque.ReadAsArray(
+                    0,
+                    block * block_size,
+                    masque.RasterXSize,
+                    min(masque.RasterYSize - block * block_size, block_size),
+                )
+                a_1 = masque_b / 255.0
+                a_2 = (-masque_b + 255) / 255.0
+                image_b[0] = np.round(
+                    np.multiply(a_1, np.take(lut_r, image_b[0])) + np.multiply(a_2, image_b[0])
+                )
+                image_b[1] = np.round(
+                    np.multiply(a_1, np.take(lut_v, image_b[1])) + np.multiply(a_2, image_b[1])
+                )
+                image_b[2] = np.round(
+                    np.multiply(a_1, np.take(lut_b, image_b[2])) + np.multiply(a_2, image_b[2])
+                )
+            else:
+                image_b[0] = np.take(lut_r, image_b[0])
+                image_b[1] = np.take(lut_v, image_b[1])
+                image_b[2] = np.take(lut_b, image_b[2])
+        # ecriture des blocs dans l'image en memoire
+        output.GetRasterBand(1).WriteArray(np.round(image_b[0]), 0, block * block_size)
+        output.GetRasterBand(2).WriteArray(np.round(image_b[1]), 0, block * block_size)
+        output.GetRasterBand(3).WriteArray(np.round(image_b[2]), 0, block * block_size)
+        print("...fait")
+    print("fin du traitement des blocs")
+
+
+def preparation(a_line):
+    """préparation des luts et des masques pour toutes les courbes."""
+    T = a_line.split(",")
+    nbAcv = int((len(T) - 1) / 2)
+    print("nombre de courbes: ", nbAcv)
+    courbes = []
+    for i in range(nbAcv):
+        num_acv = nbAcv - 1 - i
+        nom_acv = os.path.join(dir_acv, T[1 + 2 * num_acv])
+        ACV = load_acv(nom_acv)
+        print("application de la courbe : ", nom_acv)
+        print("preparation des luts...")
+        lut_r, lut_v, lut_b = create_lut()
+        apply(lut_r, ACV["courbes"][1])
+        apply(lut_v, ACV["courbes"][2])
+        apply(lut_b, ACV["courbes"][3])
+        # l'ordre a été repris sur l'implémentation faite dans le socle
+        # http://gitlab.forge-idi.ign.fr/socle/sd-socle/blob/dev/src/ign/image/radiometry/AcvCurveTransform.cpp
+        # on applique d'abord la courbe du canal, puis la courbe RVB
+        apply(lut_r, ACV["courbes"][0])
+        apply(lut_v, ACV["courbes"][0])
+        apply(lut_b, ACV["courbes"][0])
+        print("...fait")
+        masque = None
+        if len(T[2 + 2 * num_acv]) > 2:
+            nom_alpha = os.path.join(dir_acv, T[2 + 2 * num_acv]).replace(".psb", ".tif")
+            print("utilisation du masque : [", nom_alpha, "]")
+            masque = gdal.Open(nom_alpha)
+        courbes.append({"lut_r": lut_r, "lut_v": lut_v, "lut_b": lut_b, "masque": masque})
+    return courbes
 
 
 args = read_args()
 
 dir_acv = os.path.splitext(args.acv)[0]
+id_image = args.curve.split(",")[0]
+nom_img = os.path.join(args.input, id_image)
 
-T = args.curve.split(",")
-print(T)
-nom_img = os.path.join(args.input, T[0])
-img, geoTrans = load_image(nom_img)
-nbAcv = int((len(T) - 1) / 2)
-print("nombre de courbes: ", nbAcv)
-for i in range(nbAcv):
-    num_acv = nbAcv - 1 - i
-    nom_acv = os.path.join(dir_acv, T[1 + 2 * num_acv])
-    ACV = load_acv(nom_acv)
-    print("application de la courbe : ", nom_acv)
-    if len(T[2 + 2 * num_acv]) > 2:
-        nom_alpha = os.path.join(dir_acv, T[2 + 2 * num_acv]).replace(
-            ".psb", ".tif"
-        )
-        print("utilisation du masque : [", nom_alpha, "]")
-        alpha, geo = load_image(nom_alpha)
-        apply_all(img, ACV, alpha)
-    else:
-        print("sans masque")
-        apply_all(img, ACV, None)
-nom_out = os.path.join(args.output, T[0])
-save_image(nom_out, img, geoTrans)
+image = gdal.Open(nom_img)
+geo_trans = image.GetGeoTransform()
+output = gdal.GetDriverByName("MEM").Create(
+    "", image.RasterXSize, image.RasterYSize, 3, gdal.GDT_Byte
+)
+if geo_trans and geo_trans != (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
+    output.SetGeoTransform(geo_trans)
+
+COURBES = preparation(args.curve)
+
+apply_all(image, COURBES, output, args.blocksize)
+nom_out = os.path.join(args.output, id_image)
+
+if args.quality < 100:
+    gdal.GetDriverByName("COG").CreateCopy(
+        nom_out, output, options=["QUALITY=" + str(args.quality), "COMPRESS=JPEG"]
+    )
+else:
+    gdal.GetDriverByName("COG").CreateCopy(nom_out, output)
