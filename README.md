@@ -11,12 +11,14 @@ conda create --name apply_acv --file requirements.txt
 
 # Utilisation
 
-Quatre paramètres:
+Six paramètres:
 
 - l'image et les courbes que l'on doit y appliquer
 - le dossier qui contient les images à corriger
 - le dossier de sortie des traitements (par défaut les images corrigées portent le même nom que les images en entrée)
 - le dossier contenant les courbes à appliquer (au format acv) et les masques correspondant (dans un format compatble avec GDAL)
+- le nombre de lignes par bloc de calcul (option, par défaut : 1000)
+- la compression à appliquer aux images JPEG en sortie (optionnel, par défaut 100: pas de compression)
 
 Par exemple:
 ```
@@ -73,13 +75,15 @@ Le script utilise un environnement python basique.
 
 # Utilisation
 
-Cinq paramètres:
+Sept paramètres:
 
 - le dossier contenant les images à corriger
 - le dossier de sortie des traitements
 - le fichier contenant la liste des images à traiter ainsi que les corrections à leur apporter
 - le dossier contenant les courbes à appliquer (au format acv) et les masques correspondant (dans un format compatible avec GDAL)
 - le nom du fichier de sortie contenant la liste des lignes de commande (optionnel, par défaut : .\cmd.txt)
+- le nombre de lignes par bloc de calcul (optionnel, par défaut : 1000)
+- la compression à appliquer aux images JPEG en sortie (optionnel, par défaut : 90)
 
 Par exemple :
 ````
