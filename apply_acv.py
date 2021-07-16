@@ -39,7 +39,7 @@ def read_args():
         default=1000,
         type=int,
         help="number of lines per block",
-    ),
+    )
     parser.add_argument(
         "-q",
         "--quality",
@@ -89,7 +89,7 @@ def create_lut():
     lut_r = np.arange(256)
     lut_v = np.arange(256)
     lut_b = np.arange(256)
-    return lut_r, lut_v, lut_b
+    return [lut_r, lut_v, lut_b]
 
 
 def apply(lut, courbe):
@@ -108,6 +108,7 @@ def apply(lut, courbe):
 def apply_all(image, courbes, output, block_size):
     """application des courbes courbes avec le masque masque sur l'image."""
     print("application des luts par blocs...")
+    nb_bands = image.RasterCount
 
     # on charge une portion de l'image
     nb_block = int(math.ceil(image.RasterYSize / block_size))
@@ -119,11 +120,11 @@ def apply_all(image, courbes, output, block_size):
             image.RasterXSize,
             min(image.RasterYSize - block * block_size, block_size),
         )
+        if nb_bands == 1:
+            image_b = np.array([image_b])
         # on applique toutes les courbes sur cette portion d'image
         for courbe in courbes:
-            lut_r = courbe["lut_r"]
-            lut_v = courbe["lut_v"]
-            lut_b = courbe["lut_b"]
+            lut = courbe["lut"]
             masque = courbe["masque"]
             if masque is not None:
                 masque_b = masque.ReadAsArray(
@@ -134,23 +135,16 @@ def apply_all(image, courbes, output, block_size):
                 )
                 a_1 = masque_b / 255.0
                 a_2 = (-masque_b + 255) / 255.0
-                image_b[0] = np.round(
-                    np.multiply(a_1, np.take(lut_r, image_b[0])) + np.multiply(a_2, image_b[0])
-                )
-                image_b[1] = np.round(
-                    np.multiply(a_1, np.take(lut_v, image_b[1])) + np.multiply(a_2, image_b[1])
-                )
-                image_b[2] = np.round(
-                    np.multiply(a_1, np.take(lut_b, image_b[2])) + np.multiply(a_2, image_b[2])
-                )
+                for k in range(nb_bands):
+                    image_b[k] = np.round(
+                        np.multiply(a_1, np.take(lut[k], image_b[k])) + np.multiply(a_2, image_b[k])
+                    )
             else:
-                image_b[0] = np.take(lut_r, image_b[0])
-                image_b[1] = np.take(lut_v, image_b[1])
-                image_b[2] = np.take(lut_b, image_b[2])
+                for k in range(nb_bands):
+                    image_b[k] = np.take(lut[k], image_b[k])
         # ecriture des blocs dans l'image en memoire
-        output.GetRasterBand(1).WriteArray(np.round(image_b[0]), 0, block * block_size)
-        output.GetRasterBand(2).WriteArray(np.round(image_b[1]), 0, block * block_size)
-        output.GetRasterBand(3).WriteArray(np.round(image_b[2]), 0, block * block_size)
+        for k in range(nb_bands):
+            output.GetRasterBand(k+1).WriteArray(np.round(image_b[k]), 0, block * block_size)
         print("...fait")
     print("fin du traitement des blocs")
 
@@ -158,57 +152,57 @@ def apply_all(image, courbes, output, block_size):
 def preparation(a_line):
     """préparation des luts et des masques pour toutes les courbes."""
     T = a_line.split(",")
-    nbAcv = int((len(T) - 1) / 2)
-    print("nombre de courbes: ", nbAcv)
+    nb_acv = int((len(T) - 1) / 2)
+    print("nombre de courbes: ", nb_acv)
     courbes = []
-    for i in range(nbAcv):
-        num_acv = nbAcv - 1 - i
+    for i in range(nb_acv):
+        num_acv = nb_acv - 1 - i
         nom_acv = os.path.join(dir_acv, T[1 + 2 * num_acv])
         ACV = load_acv(nom_acv)
         print("application de la courbe : ", nom_acv)
         print("preparation des luts...")
-        lut_r, lut_v, lut_b = create_lut()
-        apply(lut_r, ACV["courbes"][1])
-        apply(lut_v, ACV["courbes"][2])
-        apply(lut_b, ACV["courbes"][3])
+        lut = create_lut()
+        apply(lut[0], ACV["courbes"][1])
+        apply(lut[1], ACV["courbes"][2])
+        apply(lut[2], ACV["courbes"][3])
         # l'ordre a été repris sur l'implémentation faite dans le socle
         # http://gitlab.forge-idi.ign.fr/socle/sd-socle/blob/dev/src/ign/image/radiometry/AcvCurveTransform.cpp
         # on applique d'abord la courbe du canal, puis la courbe RVB
-        apply(lut_r, ACV["courbes"][0])
-        apply(lut_v, ACV["courbes"][0])
-        apply(lut_b, ACV["courbes"][0])
+        apply(lut[0], ACV["courbes"][0])
+        apply(lut[1], ACV["courbes"][0])
+        apply(lut[2], ACV["courbes"][0])
         print("...fait")
         masque = None
         if len(T[2 + 2 * num_acv]) > 2:
             nom_alpha = os.path.join(dir_acv, T[2 + 2 * num_acv]).replace(".psb", ".tif")
             print("utilisation du masque : [", nom_alpha, "]")
             masque = gdal.Open(nom_alpha)
-        courbes.append({"lut_r": lut_r, "lut_v": lut_v, "lut_b": lut_b, "masque": masque})
+        courbes.append({"lut": lut, "masque": masque})
     return courbes
 
 
-args = read_args()
+ARGS = read_args()
 
-dir_acv = os.path.splitext(args.acv)[0]
-id_image = args.curve.split(",")[0]
-nom_img = os.path.join(args.input, id_image)
+dir_acv = os.path.splitext(ARGS.acv)[0]
+id_image = ARGS.curve.split(",")[0]
+nom_img = os.path.join(ARGS.input, id_image)
 
-image = gdal.Open(nom_img)
-geo_trans = image.GetGeoTransform()
-output = gdal.GetDriverByName("MEM").Create(
-    "", image.RasterXSize, image.RasterYSize, 3, gdal.GDT_Byte
+IMAGE = gdal.Open(nom_img)
+geo_trans = IMAGE.GetGeoTransform()
+OUTPUT = gdal.GetDriverByName("MEM").Create(
+    "", IMAGE.RasterXSize, IMAGE.RasterYSize, IMAGE.RasterCount, gdal.GDT_Byte
 )
 if geo_trans and geo_trans != (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
-    output.SetGeoTransform(geo_trans)
+    OUTPUT.SetGeoTransform(geo_trans)
 
-COURBES = preparation(args.curve)
+COURBES = preparation(ARGS.curve)
 
-apply_all(image, COURBES, output, args.blocksize)
-nom_out = os.path.join(args.output, id_image)
+apply_all(IMAGE, COURBES, OUTPUT, ARGS.blocksize)
+nom_out = os.path.join(ARGS.output, id_image)
 
-if args.quality < 100:
+if ARGS.quality < 100:
     gdal.GetDriverByName("COG").CreateCopy(
-        nom_out, output, options=["QUALITY=" + str(args.quality), "COMPRESS=JPEG"]
+        nom_out, OUTPUT, options=["QUALITY=" + str(ARGS.quality), "COMPRESS=JPEG"]
     )
 else:
-    gdal.GetDriverByName("COG").CreateCopy(nom_out, output)
+    gdal.GetDriverByName("COG").CreateCopy(nom_out, OUTPUT)

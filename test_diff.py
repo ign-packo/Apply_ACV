@@ -19,18 +19,21 @@ def load_image(nom):
 
 def save_image(nom, image, _geo_trans):
     """sauvegarde d'une image avec son georef"""
-    cols = image.shape[2]
-    rows = image.shape[1]
-    bands = image.shape[0]
+    if len(image.shape) == 2:
+        cols = image.shape[1]
+        rows = image.shape[0]
+        bands = 1
+        image = np.array([image])
+    else:
+        cols = image.shape[2]
+        rows = image.shape[1]
+        bands = image.shape[0]
     print(bands, cols, rows)
     driver = gdal.GetDriverByName("GTiff")
     out_raster = driver.Create(nom, cols, rows, bands, gdal.GDT_Byte)
-    band = out_raster.GetRasterBand(1)
-    band.WriteArray(image[0].astype("uint8"))
-    band = out_raster.GetRasterBand(2)
-    band.WriteArray(image[1].astype("uint8"))
-    band = out_raster.GetRasterBand(3)
-    band.WriteArray(image[2].astype("uint8"))
+    for i in range(bands):
+        band = out_raster.GetRasterBand(i+1)
+        band.WriteArray(image[i].astype("uint8"))
 
 
 img_1, ref = load_image(sys.argv[1])
