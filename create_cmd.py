@@ -53,7 +53,9 @@ args = read_args()
 fOut = open(args.file, "w")
 
 cwd = os.getcwd()
-pathApplyAcv = cwd+"\\apply_acv.py"
+pathApplyAcv = os.path.join(os.path.dirname(__file__), "apply_acv.py")
+
+print(pathApplyAcv)
 
 for line in open(args.curve):
     fOut.write(
