@@ -171,13 +171,14 @@ def preparation(a_line):
         apply(lut[0], ACV["courbes"][0])
         apply(lut[1], ACV["courbes"][0])
         apply(lut[2], ACV["courbes"][0])
-        print("...fait")
+        print("...application des luts faite")
         masque = None
         if len(T[2 + 2 * num_acv]) > 2:
             nom_alpha = os.path.join(dir_acv, T[2 + 2 * num_acv]).replace(".psb", ".tif")
             print("utilisation du masque : [", nom_alpha, "]")
             masque = gdal.Open(nom_alpha)
         courbes.append({"lut": lut, "masque": masque})
+        print("...fait")
     return courbes
 
 
