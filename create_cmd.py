@@ -56,8 +56,6 @@ fOut = open(args.file, "w")
 cwd = os.getcwd()
 pathApplyAcv = os.path.join(os.path.dirname(__file__), "apply_acv.py")
 
-print(pathApplyAcv)
-
 listFiles = glob.glob(os.path.join(args.input, '*.tif'))
 
 f = open(args.curve, 'r')
@@ -75,6 +73,9 @@ for file in listFiles:
     if tile in listCurves:  # on fait des retouches sur l'image
         index = listCurves.index(tile)
         line = listCmd[index]
+
+        if not line.endswith('\n'):
+            line = line + '\n'
 
         fOut.write(
             "python "
