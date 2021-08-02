@@ -10,13 +10,13 @@ def read_args():
     """Gestion des arguments"""
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", required=True, help="input data folder")
+    parser.add_argument("-i", "--input", required=True, help="input image data folder")
     parser.add_argument("-o", "--output", required=True, help="output data folder")
     parser.add_argument(
         "-c", "--curve", required=True, help="param file for images and curves"
     )
     parser.add_argument(
-        "-a", "--acv", required=True, help="path of folder containing acv files"
+        "-a", "--acv", required=True, help="path of folder containing acv files and masks"
     )
     parser.add_argument(
         "-f",
@@ -53,7 +53,9 @@ args = read_args()
 fOut = open(args.file, "w")
 
 cwd = os.getcwd()
-pathApplyAcv = cwd+"\\apply_acv.py"
+pathApplyAcv = os.path.join(os.path.dirname(__file__), "apply_acv.py")
+
+print(pathApplyAcv)
 
 for line in open(args.curve):
     fOut.write(
