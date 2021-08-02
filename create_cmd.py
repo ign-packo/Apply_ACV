@@ -4,6 +4,7 @@ Script de création des lignes de commande pour appliquer des courbes à un ense
 """
 import argparse
 import os
+import glob
 
 
 def read_args():
@@ -57,22 +58,56 @@ pathApplyAcv = os.path.join(os.path.dirname(__file__), "apply_acv.py")
 
 print(pathApplyAcv)
 
-for line in open(args.curve):
-    fOut.write(
-        "python "
-        + pathApplyAcv
-        + " -i "
-        + args.input
-        + " -o "
-        + args.output
-        + " -a "
-        + args.acv
-        + " -b "
-        + str(args.blocksize)
-        + " -q "
-        + str(args.quality)
-        + " -c "
-        + line
-    )
+listFiles = glob.glob(os.path.join(args.input, '*.tif'))
+
+f = open(args.curve, 'r')
+
+listCurves = []
+listCmd = []
+
+for line in f:
+    listCmd.append(line)
+    listCurves.append(line.split(',')[0])
+
+
+for file in listFiles:
+    tile = os.path.basename(file)
+    if tile in listCurves:  # on fait des retouches sur l'image
+        index = listCurves.index(tile)
+        line = listCmd[index]
+
+        fOut.write(
+            "python "
+            + pathApplyAcv
+            + " -i "
+            + args.input
+            + " -o "
+            + args.output
+            + " -a "
+            + args.acv
+            + " -b "
+            + str(args.blocksize)
+            + " -q "
+            + str(args.quality)
+            + " -c "
+            + line
+        )
+    else:  # pas de retouches a faire sur l'image
+        compress = str()
+        if int(args.quality) < 100:
+            compress = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality)
+        else:
+            compress = " -co COMPRESS=LZW"
+
+        fOut.write(
+            "gdal_translate"
+            + " -of COG"
+            + compress
+            + " "
+            + os.path.join(args.input, tile)
+            + " "
+            + os.path.join(args.output, tile)
+            + "\n"
+        )
 
 fOut.close()
