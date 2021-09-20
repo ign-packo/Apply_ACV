@@ -1,5 +1,5 @@
 # Apply_ACV
-Script d'application des courbes ACV
+Script d'application des courbes ACV, sous licence CECILL-B (voir [LICENSE.md](LICENSE.md)).
 
 # Pré-requis
 
@@ -94,3 +94,5 @@ Exemple en spécifiant le nom du fichier de sortie :
 ````
 python create_cmd.py -i data -o . -c data\liste_reglages.txt -a data\liste_reglages -f .\out.txt
 ````
+
+[![IGN](images/logo_ign.png)](https://www.ign.fr)
