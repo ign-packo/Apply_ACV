@@ -13,6 +13,7 @@ from scipy.interpolate import interp1d, make_interp_spline
 # doc du format ACV
 # https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
 
+gdal.UseExceptions()
 
 def read_args():
     """Gestion des arguments"""
@@ -203,7 +204,9 @@ nom_out = os.path.join(ARGS.output, id_image)
 
 if ARGS.quality < 100:
     gdal.GetDriverByName("COG").CreateCopy(
-        nom_out, OUTPUT, options=["QUALITY=" + str(ARGS.quality), "COMPRESS=JPEG"]
+        nom_out, OUTPUT, options=["QUALITY=" + str(ARGS.quality), "COMPRESS=JPEG", "BIGTIFF=YES"]
     )
 else:
-    gdal.GetDriverByName("COG").CreateCopy(nom_out, OUTPUT)
+    gdal.GetDriverByName("COG").CreateCopy(nom_out, OUTPUT, options=["BIGTIFF=YES"])
+
+OUTPUT = None
