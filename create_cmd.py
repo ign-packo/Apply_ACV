@@ -96,15 +96,14 @@ for file in listFiles:
     else:  # pas de retouches a faire sur l'image
         compress = str()
         if int(args.quality) < 100:
-            compress = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality)
+            compress = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality) + " "
         else:
-            compress = " -co COMPRESS=LZW"
+            compress = " -co COMPRESS=LZW "
 
         fOut.write(
             "gdal_translate"
-            + " -of COG"
+            + " -of COG -co BIGTIFF=YES "
             + compress
-            + " "
             + os.path.join(args.input, tile)
             + " "
             + os.path.join(args.output, tile)
