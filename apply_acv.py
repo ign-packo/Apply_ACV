@@ -15,23 +15,24 @@ from scipy.interpolate import interp1d, make_interp_spline
 
 gdal.UseExceptions()
 
+
 def read_args():
     """Gestion des arguments"""
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", required=True, help="input image folder")
-    parser.add_argument("-o", "--output", required=True, help="output folder")
+    parser.add_argument("-i", "--input", required=True, help="input image folder path")
+    parser.add_argument("-o", "--output", required=True, help="output folder path")
     parser.add_argument(
         "-c",
         "--curve",
         required=True,
-        help="curves to apply to the image (init.tif,bde5_2452.0.acv,bde5_2452.0.0.psb)",
+        help="curves to apply to the image (example: init.tif,bde5_2452.0.acv,bde5_2452.0.0.psb)",
     )
     parser.add_argument(
         "-a",
         "--acv",
         required=True,
-        help="path of folder containing acv files and masks (compatible format with GDAL)",
+        help="folder path containing acv files and masks (compatible format with GDAL)",
     )
     parser.add_argument(
         "-b",
@@ -49,7 +50,6 @@ def read_args():
         type=int,
         help="Jpeg compression quality (default: 100, no compression)",
     )
-
     parser.add_argument("-v", "--verbose", help="verbose (default: 0)", type=int, default=0)
     args = parser.parse_args()
 
@@ -152,30 +152,30 @@ def apply_all(image, courbes, output, block_size):
 
 def preparation(a_line):
     """préparation des luts et des masques pour toutes les courbes."""
-    T = a_line.split(",")
-    nb_acv = int((len(T) - 1) / 2)
+    elem = a_line.split(",")
+    nb_acv = int((len(elem) - 1) / 2)
     print("nombre de courbes: ", nb_acv)
     courbes = []
     for i in range(nb_acv):
         num_acv = nb_acv - 1 - i
-        nom_acv = os.path.join(dir_acv, T[1 + 2 * num_acv])
-        ACV = load_acv(nom_acv)
+        nom_acv = os.path.join(dir_acv, elem[1 + 2 * num_acv])
+        acv = load_acv(nom_acv)
         print("application de la courbe : ", nom_acv)
         print("preparation des luts...")
         lut = create_lut()
-        apply(lut[0], ACV["courbes"][1])
-        apply(lut[1], ACV["courbes"][2])
-        apply(lut[2], ACV["courbes"][3])
+        apply(lut[0], acv["courbes"][1])
+        apply(lut[1], acv["courbes"][2])
+        apply(lut[2], acv["courbes"][3])
         # l'ordre a été repris sur l'implémentation faite dans le socle
         # http://gitlab.forge-idi.ign.fr/socle/sd-socle/blob/dev/src/ign/image/radiometry/AcvCurveTransform.cpp
         # on applique d'abord la courbe du canal, puis la courbe RVB
-        apply(lut[0], ACV["courbes"][0])
-        apply(lut[1], ACV["courbes"][0])
-        apply(lut[2], ACV["courbes"][0])
+        apply(lut[0], acv["courbes"][0])
+        apply(lut[1], acv["courbes"][0])
+        apply(lut[2], acv["courbes"][0])
         print("...application des luts faite")
         masque = None
-        if len(T[2 + 2 * num_acv]) > 2:
-            nom_alpha = os.path.join(dir_acv, T[2 + 2 * num_acv]).replace(".psb", ".tif")
+        if len(elem[2 + 2 * num_acv]) > 2:
+            nom_alpha = os.path.join(dir_acv, elem[2 + 2 * num_acv]).replace(".psb", ".tif")
             print("utilisation du masque : [", nom_alpha, "]")
             masque = gdal.Open(nom_alpha)
         courbes.append({"lut": lut, "masque": masque})
