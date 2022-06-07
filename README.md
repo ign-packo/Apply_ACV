@@ -61,11 +61,10 @@ order, value = ([(2, 0)],[(2, 0)])
 fct = make_interp_spline(courbe[::2], courbe[1::2], k=3, bc_type=(order, value)
 ```
 
-Pour obtenir un résultat identifique à PhotoShop il faut faire attention aux arrondis, schématiquement:
+Pour obtenir un résultat identique à PhotoShop il faut faire attention aux arrondis, schématiquement:
 ````
 Corr = Round(Masque/255 * Round(Lut(Init)) + (255-Masque)/255 * Init)
 ````
-
 
 # Create_cmd
 Script de création des lignes de command pour Apply_ACV
@@ -75,15 +74,26 @@ Le script utilise un environnement python basique.
 
 # Utilisation
 
-Sept paramètres:
+````
+usage: create_cmd.py [-h] -i INPUT -o OUTPUT -c CURVE -a ACV [-f FILE] [-b BLOCKSIZE] [-q QUALITY] [-v VERBOSE]
 
-- le dossier contenant les images à corriger
-- le dossier de sortie des traitements
-- le fichier contenant la liste des images à traiter ainsi que les corrections à leur apporter
-- le dossier contenant les courbes à appliquer (au format acv) et les masques correspondant (dans un format compatible avec GDAL)
-- le nom du fichier de sortie contenant la liste des lignes de commande (optionnel, par défaut : .\cmd.txt)
-- le nombre de lignes par bloc de calcul (optionnel, par défaut : 1000)
-- la compression à appliquer aux images JPEG en sortie (optionnel, par défaut : 90)
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        input image data folder path
+  -o OUTPUT, --output OUTPUT
+                        output data folder path
+  -c CURVE, --curve CURVE
+                        param file for images and curves
+  -a ACV, --acv ACV     folder path containing acv files and masks
+  -f FILE, --file FILE  output file path containing command lines (default: ./cmd.txt)
+  -b BLOCKSIZE, --blocksize BLOCKSIZE
+                        number of lines per block (default: 1000)
+  -q QUALITY, --quality QUALITY
+                        JPEG compression quality (default: 90)
+  -v VERBOSE, --verbose VERBOSE
+                        verbose (default: 0)
+````
 
 Par exemple :
 ````

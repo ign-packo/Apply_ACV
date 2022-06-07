@@ -47,7 +47,7 @@ def read_args():
         required=False,
         default=100,
         type=int,
-        help="Jpeg compression quality (100: No compression)",
+        help="Jpeg compression quality (default: 100, no compression)",
     )
 
     parser.add_argument("-v", "--verbose", help="verbose (default: 0)", type=int, default=0)

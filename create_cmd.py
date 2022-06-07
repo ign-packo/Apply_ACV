@@ -17,25 +17,25 @@ def read_args():
         "-c", "--curve", required=True, help="param file for images and curves"
     )
     parser.add_argument(
-        "-a", "--acv", required=True, help="path of folder containing acv files and masks"
+        "-a", "--acv", required=True, help="folder path containing acv files and masks"
     )
     parser.add_argument(
         "-f",
         "--file",
         required=False,
-        help="output file containing command lines (cmd.txt)",
+        help="output file path containing command lines (default: ./cmd.txt)",
         default="cmd.txt",
     )
     parser.add_argument(
         "-b",
         "--blocksize",
-        help="number of lines per block",
+        help="number of lines per block (default: 1000)",
         default=1000
     )
     parser.add_argument(
         "-q",
         "--quality",
-        help="JPEG Compression quality (100: No compression)",
+        help="JPEG compression quality (default: 90)",
         default=90
     )
     parser.add_argument(
