@@ -11,42 +11,42 @@ def read_args():
     """Gestion des arguments"""
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", required=True, help="input image data folder")
-    parser.add_argument("-o", "--output", required=True, help="output data folder")
+    parser.add_argument("-i", "--input", required=True, help="input image data folder path")
+    parser.add_argument("-o", "--output", required=True, help="output data folder path")
     parser.add_argument(
         "-c", "--curve", required=True, help="param file for images and curves"
     )
     parser.add_argument(
-        "-a", "--acv", required=True, help="path of folder containing acv files and masks"
+        "-a", "--acv", required=True, help="folder path containing acv files and masks"
     )
     parser.add_argument(
         "-f",
         "--file",
         required=False,
-        help="output file containing command lines (cmd.txt)",
+        help="output file path containing command lines (default: ./cmd.txt)",
         default="cmd.txt",
     )
     parser.add_argument(
         "-b",
         "--blocksize",
-        help="number of lines per block",
+        help="number of lines per block (default: 1000)",
         default=1000
     )
     parser.add_argument(
         "-q",
         "--quality",
-        help="JPEG Compression quality (100: No compression)",
+        help="JPEG compression quality (default: 90)",
         default=90
     )
     parser.add_argument(
         "-v", "--verbose", help="verbose (default: 0)", type=int, default=0
     )
-    args = parser.parse_args()
+    args_cmd = parser.parse_args()
 
-    if args.verbose >= 1:
-        print("\nArguments: ", args)
+    if args_cmd.verbose >= 1:
+        print("\nArguments: ", args_cmd)
 
-    return args
+    return args_cmd
 
 
 args = read_args()
@@ -94,16 +94,15 @@ for file in listFiles:
             + line
         )
     else:  # pas de retouches a faire sur l'image
-        compress = str()
         if int(args.quality) < 100:
-            compress = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality) + " "
+            compress_param = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality) + " "
         else:
-            compress = " -co COMPRESS=LZW "
+            compress_param = " -co COMPRESS=LZW "
 
         fOut.write(
             "gdal_translate"
             + " -of COG -co BIGTIFF=YES "
-            + compress
+            + compress_param
             + os.path.join(args.input, tile)
             + " "
             + os.path.join(args.output, tile)
