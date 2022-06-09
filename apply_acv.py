@@ -51,12 +51,12 @@ def read_args():
         help="Jpeg compression quality (default: 100, no compression)",
     )
     parser.add_argument("-v", "--verbose", help="verbose (default: 0)", type=int, default=0)
-    args = parser.parse_args()
+    args_apply_acv = parser.parse_args()
 
-    if args.verbose >= 1:
-        print("\nArguments: ", args)
+    if args_apply_acv.verbose >= 1:
+        print("\nArguments: ", args_apply_acv)
 
-    return args
+    return args_apply_acv
 
 
 def load_acv(nom):
@@ -183,7 +183,7 @@ def preparation(a_line):
     return courbes
 
 
-ARGS = read_args()
+args = read_args()
 
 dir_acv = os.path.splitext(ARGS.acv)[0]
 id_image = ARGS.curve.split(",")[0]
@@ -191,11 +191,22 @@ nom_img = os.path.join(ARGS.input, id_image)
 
 IMAGE = gdal.Open(nom_img)
 geo_trans = IMAGE.GetGeoTransform()
+projection = IMAGE.GetSpatialRef()
+print(f"Projection = {projection}")
 OUTPUT = gdal.GetDriverByName("MEM").Create(
     "", IMAGE.RasterXSize, IMAGE.RasterYSize, IMAGE.RasterCount, gdal.GDT_Byte
 )
+
 if geo_trans and geo_trans != (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
     OUTPUT.SetGeoTransform(geo_trans)
+
+# on impose la projection
+if args.projection:
+    OUTPUT.SetProjection(f"EPSG:{args.projection}")
+#if projection: (on recupere la projection des donnees en entree)
+#    OUTPUT.SetSpatialRef(projection)
+
+OUTPUT.SetProjection("EPSG:2154")
 
 COURBES = preparation(ARGS.curve)
 

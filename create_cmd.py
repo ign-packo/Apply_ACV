@@ -33,6 +33,13 @@ def read_args():
         default=1000
     )
     parser.add_argument(
+        "-p",
+        "--proj",
+        required=False,
+        help="projection for output images (default : keep)",
+        default="keep"
+    )
+    parser.add_argument(
         "-q",
         "--quality",
         help="JPEG compression quality (default: 90)",
@@ -70,6 +77,10 @@ for line in f:
 
 for file in listFiles:
     tile = os.path.basename(file)
+
+    if args.proj == "keep":
+        print(f"On garde la projection initiale")
+
     if tile in listCurves:  # on fait des retouches sur l'image
         index = listCurves.index(tile)
         line = listCmd[index]
