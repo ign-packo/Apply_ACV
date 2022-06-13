@@ -50,6 +50,11 @@ def read_args():
         type=int,
         help="Jpeg compression quality (default: 100, no compression)",
     )
+    parser.add_argument(
+        "-p",
+        "--projection",
+        help="EPSG code for output files projection (if needed)"
+    )
     parser.add_argument("-v", "--verbose", help="verbose (default: 0)", type=int, default=0)
     args_apply_acv = parser.parse_args()
 
@@ -185,14 +190,13 @@ def preparation(a_line):
 
 args = read_args()
 
-dir_acv = os.path.splitext(ARGS.acv)[0]
-id_image = ARGS.curve.split(",")[0]
-nom_img = os.path.join(ARGS.input, id_image)
+dir_acv = os.path.splitext(args.acv)[0]
+id_image = args.curve.split(",")[0]
+nom_img = os.path.join(args.input, id_image)
 
 IMAGE = gdal.Open(nom_img)
 geo_trans = IMAGE.GetGeoTransform()
-projection = IMAGE.GetSpatialRef()
-print(f"Projection = {projection}")
+projection_in = IMAGE.GetSpatialRef()
 OUTPUT = gdal.GetDriverByName("MEM").Create(
     "", IMAGE.RasterXSize, IMAGE.RasterYSize, IMAGE.RasterCount, gdal.GDT_Byte
 )
@@ -203,19 +207,17 @@ if geo_trans and geo_trans != (0.0, 1.0, 0.0, 0.0, 0.0, 1.0):
 # on impose la projection
 if args.projection:
     OUTPUT.SetProjection(f"EPSG:{args.projection}")
-#if projection: (on recupere la projection des donnees en entree)
-#    OUTPUT.SetSpatialRef(projection)
+else:  # (on recupere la projection des donnees en entree)
+    OUTPUT.SetSpatialRef(projection_in)
 
-OUTPUT.SetProjection("EPSG:2154")
+COURBES = preparation(args.curve)
 
-COURBES = preparation(ARGS.curve)
+apply_all(IMAGE, COURBES, OUTPUT, args.blocksize)
+nom_out = os.path.join(args.output, id_image)
 
-apply_all(IMAGE, COURBES, OUTPUT, ARGS.blocksize)
-nom_out = os.path.join(ARGS.output, id_image)
-
-if ARGS.quality < 100:
+if args.quality < 100:
     gdal.GetDriverByName("COG").CreateCopy(
-        nom_out, OUTPUT, options=["QUALITY=" + str(ARGS.quality), "COMPRESS=JPEG", "BIGTIFF=YES"]
+        nom_out, OUTPUT, options=["QUALITY=" + str(args.quality), "COMPRESS=JPEG", "BIGTIFF=YES"]
     )
 else:
     gdal.GetDriverByName("COG").CreateCopy(nom_out, OUTPUT, options=["BIGTIFF=YES"])

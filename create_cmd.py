@@ -34,10 +34,8 @@ def read_args():
     )
     parser.add_argument(
         "-p",
-        "--proj",
-        required=False,
-        help="projection for output images (default : keep)",
-        default="keep"
+        "--projection",
+        help="EPSG code for output files projection (if needed)",
     )
     parser.add_argument(
         "-q",
@@ -57,6 +55,13 @@ def read_args():
 
 
 args = read_args()
+
+# verification de la validite de la projection demandee
+if args.projection:
+    if not args.projection.isdigit() or len(args.projection) < 4 or len(args.projection) > 5:
+        raise SystemExit('** ERREUR: '
+                         'La projection indiquee n\'est pas valable !'
+                         % args.projection)
 
 fOut = open(args.file, "w")
 
@@ -78,9 +83,6 @@ for line in f:
 for file in listFiles:
     tile = os.path.basename(file)
 
-    if args.proj == "keep":
-        print(f"On garde la projection initiale")
-
     if tile in listCurves:  # on fait des retouches sur l'image
         index = listCurves.index(tile)
         line = listCmd[index]
@@ -88,7 +90,7 @@ for file in listFiles:
         if not line.endswith('\n'):
             line = line + '\n'
 
-        fOut.write(
+        cmd_apply_acv = (
             "python "
             + pathApplyAcv
             + " -i "
@@ -101,19 +103,26 @@ for file in listFiles:
             + str(args.blocksize)
             + " -q "
             + str(args.quality)
+            + " -p "
+            + args.projection
             + " -c "
             + line
         )
+
+        fOut.write(cmd_apply_acv)
     else:  # pas de retouches a faire sur l'image
         if int(args.quality) < 100:
-            compress_param = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality) + " "
+            gdal_param = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality) + " "
         else:
-            compress_param = " -co COMPRESS=LZW "
+            gdal_param = " -co COMPRESS=LZW "
+
+        if args.projection:
+            gdal_param = "-a_srs EPSG:"+args.projection+" "
 
         fOut.write(
             "gdal_translate"
             + " -of COG -co BIGTIFF=YES "
-            + compress_param
+            + gdal_param
             + os.path.join(args.input, tile)
             + " "
             + os.path.join(args.output, tile)
