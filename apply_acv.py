@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Script d'application des courbes sur une image
@@ -9,6 +10,7 @@ import math
 from osgeo import gdal
 import numpy as np
 from scipy.interpolate import interp1d, make_interp_spline
+from get_apply_acv_version import APPLYACV_VERSION
 
 # doc du format ACV
 # https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
@@ -56,6 +58,10 @@ def read_args():
         help="EPSG code for output files projection (if needed)"
     )
     parser.add_argument("-v", "--verbose", help="verbose (default: 0)", type=int, default=0)
+    parser.add_argument(
+        "--version",
+        action="version", help="display version information and exit",
+        version=APPLYACV_VERSION)
     args_apply_acv = parser.parse_args()
 
     if args_apply_acv.verbose >= 1:

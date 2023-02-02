@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Script de création des lignes de commande pour appliquer des courbes à un ensemble d'images
@@ -5,6 +6,7 @@ Script de création des lignes de commande pour appliquer des courbes à un ense
 import argparse
 import os
 import glob
+from get_apply_acv_version import APPLYACV_VERSION
 
 
 def read_args():
@@ -47,6 +49,11 @@ def read_args():
     parser.add_argument(
         "-v", "--verbose", help="verbose (default: 0)", type=int, default=0
     )
+    parser.add_argument(
+        "--version",
+        action="version",
+        help="display version information and exit",
+        version=APPLYACV_VERSION)
     args_cmd = parser.parse_args()
 
     if args_cmd.verbose >= 1:
