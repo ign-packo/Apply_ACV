@@ -118,13 +118,14 @@ for file in listFiles:
 
         fOut.write(cmd_apply_acv)
     else:  # pas de retouches a faire sur l'image
-        if int(args.quality) < 100:
-            gdal_param = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality) + " "
+        gdal_param = ""
+        if args.quality < 100:
+            gdal_param += " -co COMPRESS=JPEG -co QUALITY=" + str(args.quality) + " "
         else:
-            gdal_param = " -co COMPRESS=LZW "
+            gdal_param += "-co QUALITY=" + str(args.quality) + " "
 
         if args.projection:
-            gdal_param = "-a_srs EPSG:"+args.projection+" "
+            gdal_param += "-a_srs EPSG:" + args.projection + " "
 
         fOut.write(
             "gdal_translate"
