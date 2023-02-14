@@ -40,6 +40,7 @@ def read_args():
     parser.add_argument(
         "-q",
         "--quality",
+        type=int,
         help="JPEG compression quality (default: 90)",
         default=90
     )
@@ -62,6 +63,12 @@ if args.projection:
         raise SystemExit('** ERREUR: '
                          'La projection indiquee n\'est pas valable ! '
                          + args.projection)
+
+# verification validite pour quality
+if args.quality not in range(0, 101):
+    raise SystemExit('** ERREUR: '
+                     "La valeur choisie pour 'quality' est invalide ! "
+                     + str(args.quality))
 
 fOut = open(args.file, "w")
 
