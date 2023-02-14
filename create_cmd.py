@@ -60,8 +60,8 @@ args = read_args()
 if args.projection:
     if not args.projection.isdigit() or len(args.projection) < 4 or len(args.projection) > 5:
         raise SystemExit('** ERREUR: '
-                         'La projection indiquee n\'est pas valable !'
-                         % args.projection)
+                         'La projection indiquee n\'est pas valable ! '
+                         + args.projection)
 
 fOut = open(args.file, "w")
 
