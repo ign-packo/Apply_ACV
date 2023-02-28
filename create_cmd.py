@@ -40,6 +40,7 @@ def read_args():
     parser.add_argument(
         "-q",
         "--quality",
+        type=int,
         help="JPEG compression quality (default: 90)",
         default=90
     )
@@ -60,8 +61,14 @@ args = read_args()
 if args.projection:
     if not args.projection.isdigit() or len(args.projection) < 4 or len(args.projection) > 5:
         raise SystemExit('** ERREUR: '
-                         'La projection indiquee n\'est pas valable !'
-                         % args.projection)
+                         'La projection indiquee n\'est pas valable ! '
+                         + args.projection)
+
+# verification validite pour quality
+if args.quality not in range(0, 101):
+    raise SystemExit('** ERREUR: '
+                     "La valeur choisie pour 'quality' est invalide ! "
+                     + str(args.quality))
 
 fOut = open(args.file, "w")
 
@@ -111,13 +118,14 @@ for file in listFiles:
 
         fOut.write(cmd_apply_acv)
     else:  # pas de retouches a faire sur l'image
-        if int(args.quality) < 100:
-            gdal_param = " -co COMPRESS=JPEG -co QUALITY="+str(args.quality) + " "
+        gdal_param = ""
+        if args.quality < 100:
+            gdal_param += " -co COMPRESS=JPEG -co QUALITY=" + str(args.quality) + " "
         else:
-            gdal_param = " -co COMPRESS=LZW "
+            gdal_param += "-co QUALITY=" + str(args.quality) + " "
 
         if args.projection:
-            gdal_param = "-a_srs EPSG:"+args.projection+" "
+            gdal_param += "-a_srs EPSG:" + args.projection + " "
 
         fOut.write(
             "gdal_translate"
