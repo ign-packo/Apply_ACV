@@ -110,11 +110,10 @@ for file in listFiles:
             + str(args.blocksize)
             + " -q "
             + str(args.quality)
-            + " -p "
-            + args.projection
-            + " -c "
-            + line
         )
+        if args.projection:
+            cmd_apply_acv += " -p " + args.projection
+        cmd_apply_acv += " -c " + line
 
         fOut.write(cmd_apply_acv)
     else:  # pas de retouches a faire sur l'image

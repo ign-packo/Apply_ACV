@@ -75,7 +75,7 @@ Le script utilise un environnement python basique.
 # Utilisation
 
 ````
-usage: create_cmd.py [-h] -i INPUT -o OUTPUT -c CURVE -a ACV [-f FILE] [-b BLOCKSIZE] [-q QUALITY] [-v VERBOSE]
+usage: create_cmd.py [-h] -i INPUT -o OUTPUT -c CURVE -a ACV [-f FILE] [-b BLOCKSIZE] [-p PROJECTION] [-q QUALITY] [-v VERBOSE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -89,6 +89,8 @@ optional arguments:
   -f FILE, --file FILE  output file path containing command lines (default: ./cmd.txt)
   -b BLOCKSIZE, --blocksize BLOCKSIZE
                         number of lines per block (default: 1000)
+  -p PROJECTION, --projection PROJECTION
+                        EPSG code for output files projection (if needed)
   -q QUALITY, --quality QUALITY
                         JPEG compression quality (default: 90)
   -v VERBOSE, --verbose VERBOSE
