@@ -75,9 +75,9 @@ Le script utilise un environnement python basique.
 # Utilisation
 
 ````
-usage: create_cmd.py [-h] -i INPUT -o OUTPUT -c CURVE -a ACV [-f FILE] [-b BLOCKSIZE] [-p PROJECTION] [-q QUALITY] [-v VERBOSE]
+usage: create_cmd.py [-h] -i INPUT -o OUTPUT -c CURVE -a ACV [-f FILE] [-b BLOCKSIZE] [-p PROJECTION] [-q QUALITY] [-v VERBOSE] [--version]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -i INPUT, --input INPUT
                         input image data folder path
@@ -95,6 +95,7 @@ optional arguments:
                         JPEG compression quality (default: 90)
   -v VERBOSE, --verbose VERBOSE
                         verbose (default: 0)
+  --version             display version information and exit
 ````
 
 Par exemple :
@@ -106,5 +107,30 @@ Exemple en spécifiant le nom du fichier de sortie :
 ````
 python create_cmd.py -i data -o . -c data\liste_reglages.txt -a data\liste_reglages -f .\out.txt
 ````
+
+Le fichier de sortie contiendra l'information sur la version utilisée pour sa création.
+
+# Création du paquet pip - développeur
+
+Pour générer un paquet pip *apply_acv-XXX.whl*, il suffit de se mettre dans le dossier des sources et faire :
+```
+python setup.py bdist_wheel
+```
+Le paquet whl généré se trouve dans le dossier *dist/*, paquet à distribuer aux utilisateurs.
+
+# Installation du paquet pip - utilisateur
+
+Pour installer un paquet whl, se placer dans le dossier où il se trouve et ensuite faire :
+```
+pip3 install apply_acv-XXX.whl
+```
+
+Si besoin, désinstaller une version précédemment installée avec :
+```
+pip3 uninstall apply_acv
+```
+
+Une fois l'installation du paquet effectuée, s'assurer que le répertoire contenant les scripts du paquet est bien dans le PATH.
+
 
 [![IGN](images/logo_ign.png)](https://www.ign.fr)

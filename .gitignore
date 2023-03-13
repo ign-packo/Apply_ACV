@@ -1,0 +1,13 @@
+__pycache__/
+
+# Setuptools distribution folder
+dist/
+
+# Setuptools Python egg metadata from source files
+*.egg-info/
+
+# Module with revision info
+apply_acv_version.py
+
+# Packaging
+build/
